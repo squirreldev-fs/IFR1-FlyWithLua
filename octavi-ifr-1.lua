@@ -82,6 +82,7 @@ AW109_TIME_LAST_ACTION = 0
 
 function ifr1_close()
     if IFR1_DEVICE ~= nil then
+        hid_write(IFR1_DEVICE, 11, 0) -- Switch off LEDs
         hid_close(IFR1_DEVICE)
         IFR1_DEVICE = nil
     end
