@@ -43,7 +43,10 @@ Adjust the NAV2 standby frequency. Press the swap button to swap to active.
 In shift mode, adjusts the NAV2 OBS
 
 ### FMS1, FMS2
-These are the main modes that are set up to be specific to aircraft with GNS430/530 navigators, as they use 430-specific X-Plane commands. In these modes, the bottom and right side buttons and the knobs (including clicking the knob for cursor) operate the navigators.
+These are the main modes that are set up to be specific to aircraft with GNS430/530 navigators, as they use 430-specific X-Plane commands.
+In these modes, the bottom and right side buttons and the knobs (including clicking the knob for cursor) operate the navigators.
+
+For the G1000, FMS1 refers to the captain side, FMS2 to the navigation unit.
 
 ### AP
 The LEDs indicate the AP status, and the bottom buttons select the AP mode. The little knob adjust altitude preselect, and the big knob adjusts vertical speed target.

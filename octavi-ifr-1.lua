@@ -280,23 +280,30 @@ function ifr1_process_buttons_knobs_standard(k0, k1)
 
         if IFR1_MODE == IFR1_MODE_VALUE_FMS1 or IFR1_MODE == IFR1_MODE_VALUE_FMS2 then
             local fms_no = IFR1_MODE == IFR1_MODE_VALUE_FMS1 and 1 or 2
+            -- G1000: FMS1=captain PFD, FMS2=ND
+            local fms_no_g1000 = fms_no == 1 and 1 or 3
 
             if IFR1_BTN_DCT and not IFR1_LAST_BTN_DCT then
                 command_once(string.format("sim/GPS/g430n%d_direct", fms_no))
+                command_once(string.format("sim/GPS/g1000n%d_direct", fms_no_g1000))
             end
 
             if IFR1_BTN_MNU and not IFR1_LAST_BTN_MNU then
                 command_once(string.format("sim/GPS/g430n%d_menu", fms_no))
+                command_once(string.format("sim/GPS/g1000n%d_menu", fms_no_g1000))
             end
 
             if IFR1_BTN_CLR and not IFR1_LAST_BTN_CLR then
                 command_begin(string.format("sim/GPS/g430n%d_clr", fms_no))
+                command_begin(string.format("sim/GPS/g1000n%d_clr", fms_no_g1000))
             elseif not IFR1_BTN_CLR and IFR1_LAST_BTN_CLR then
                 command_end(string.format("sim/GPS/g430n%d_clr", fms_no))
+                command_end(string.format("sim/GPS/g1000n%d_clr", fms_no_g1000))
             end
 
             if IFR1_BTN_ENT and not IFR1_LAST_BTN_ENT then
                 command_once(string.format("sim/GPS/g430n%d_ent", fms_no))
+                command_once(string.format("sim/GPS/g1000n%d_ent", fms_no_g1000))
             end
 
             if IFR1_BTN_AP and not IFR1_LAST_BTN_AP then
@@ -313,6 +320,7 @@ function ifr1_process_buttons_knobs_standard(k0, k1)
 
             if IFR1_BTN_APR and not IFR1_LAST_BTN_APR then
                 command_once(string.format("sim/GPS/g430n%d_fpl", fms_no))
+                command_once(string.format("sim/GPS/g1000n%d_fpl", fms_no_g1000))
             end
 
             if IFR1_BTN_ALT and not IFR1_LAST_BTN_ALT then
@@ -321,28 +329,33 @@ function ifr1_process_buttons_knobs_standard(k0, k1)
 
             if IFR1_BTN_VS and not IFR1_LAST_BTN_VS then
                 command_once(string.format("sim/GPS/g430n%d_proc", fms_no))
+                command_once(string.format("sim/GPS/g1000n%d_proc", fms_no_g1000))
             end
 
             if IFR1_BTN_KNOB and not IFR1_LAST_BTN_KNOB then
                 command_once(string.format("sim/GPS/g430n%d_cursor", fms_no))
+                command_once(string.format("sim/GPS/g1000n%d_cursor", fms_no_g1000))
             end
 
             for i = 1, math.abs(k1) do
                 if k1 < 0 then
                     command_once(string.format("sim/GPS/g430n%d_page_dn", fms_no))
+                    command_once(string.format("sim/GPS/g1000n%d_fms_inner_down", fms_no_g1000))
                 else
                     command_once(string.format("sim/GPS/g430n%d_page_up", fms_no))
+                    command_once(string.format("sim/GPS/g1000n%d_fms_inner_up", fms_no_g1000))
                 end
             end
 
             for i = 1, math.abs(k0) do
                 if k0 < 0 then
                     command_once(string.format("sim/GPS/g430n%d_chapter_dn", fms_no))
+                    command_once(string.format("sim/GPS/g1000n%d_fms_outer_down", fms_no_g1000))
                 else
                     command_once(string.format("sim/GPS/g430n%d_chapter_up", fms_no))
+                    command_once(string.format("sim/GPS/g1000n%d_fms_outer_up", fms_no_g1000))
                 end
             end
-            
         end
 
         if IFR1_MODE == IFR1_MODE_VALUE_AP then
