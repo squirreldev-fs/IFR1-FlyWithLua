@@ -308,14 +308,20 @@ function ifr1_process_buttons_knobs_standard(k0, k1)
 
             if IFR1_BTN_AP and not IFR1_LAST_BTN_AP then
                 command_once(string.format("sim/GPS/g430n%d_cdi", fms_no))
+                -- "CDI" in default view
+                command_once(string.format("sim/GPS/g1000n%d_softkey6", fms_no_g1000))
             end
 
             if IFR1_BTN_HDG and not IFR1_LAST_BTN_HDG then
                 command_once(string.format("sim/GPS/g430n%d_obs", fms_no))
+                -- "OBS" in default view
+                command_once(string.format("sim/GPS/g1000n%d_softkey5", fms_no_g1000))
             end
 
             if IFR1_BTN_NAV and not IFR1_LAST_BTN_NAV then
                 command_once(string.format("sim/GPS/g430n%d_msg", fms_no))
+                -- right-most button; "ALERTS" in default view
+                command_once(string.format("sim/GPS/g1000n%d_softkey12", fms_no_g1000))
             end
 
             if IFR1_BTN_APR and not IFR1_LAST_BTN_APR then
