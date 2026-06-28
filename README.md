@@ -12,6 +12,13 @@ This version covers two usages: "standard" aircraft and the AW109SP by X-Trident
 1. Install [FlyWithLua](https://forums.x-plane.org/index.php?/files/file/38445-flywithlua-ng-next-generation-edition-for-x-plane-11-win-lin-mac/)
 2. Download and copy `octavi-ifr-1.lua` into FlyWithLua's `Scripts` directory.
 
+### Additional step on Linux
+You need to add a udev rule:
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e6d6", MODE="0666"
+
+Then reload the udev rules:
+sudo udevadm control --reload
+
 
 ## Usage (common word)
 The script attempts to open the IFR-1 on load and periodically rechecks. It should automatically connect or reconnect if the IFR-1 is not plugged on start or if it is unplugged and replugged.
