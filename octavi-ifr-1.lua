@@ -57,6 +57,8 @@ IFR1_DEVICE_PID = 0xe6d6
 IFR1_LAST_NUMBER_OF_HID_DEVICES = 0
 IFR1_FOUND = false
 
+IFR1_ERROR = false
+
 DataRef("heading", "sim/cockpit/autopilot/heading_mag", "writable")
 DataRef("nav1_obs", "sim/cockpit/radios/nav1_obs_degm", "writable")
 DataRef("nav2_obs", "sim/cockpit/radios/nav2_obs_degm2", "writable")
@@ -135,10 +137,13 @@ function ifr1_open()
     end
 
     if IFR1_FOUND and not connected then
-        IFR1_DEVICE = hid_open(IFR1_DEVICE_VID,IFR1_DEVICE_PID)
+        IFR1_DEVICE = hid_open(IFR1_DEVICE_VID, IFR1_DEVICE_PID)
         if IFR1_DEVICE ~= nil then
             hid_set_nonblocking(IFR1_DEVICE, 1)
             hid_write(IFR1_DEVICE, 11, IFR1_LED_LAST_WRITE)
+        else
+            print("IFR1 ERROR: device found, but failed to open HID")
+            IFR1_ERROR = true
         end
     end
 end
@@ -699,91 +704,95 @@ function ifr1_ubyte_to_sbyte(usb)
 end
 
 function ifr1_process()
-    ifr1_open()
-    if IFR1_DEVICE ~= nil then
-        -- read from the IFR-1. Since it is set to non-blocking, this will return with nov == 0 if there is no report available
-        local nov, byte0, buttons0, buttons1, buttons2, byte5, knob0, knob1, mode_val = hid_read(IFR1_DEVICE, 8)
+    if IFR1_ERROR then
+        return
+    end
 
-        if PLANE_AUTHOR == "X-Trident" and PLANE_DESCRIP == "AW109SP" then
-            if IFR1_MODE == IFR1_MODE_VALUE_FMS1 or IFR1_MODE == IFR1_MODE_VALUE_FMS2 then
-                IFR1_LED_AP = false
-                IFR1_LED_HDG = false
-                IFR1_LED_NAV = false
-                IFR1_LED_ALT = false
-                IFR1_LED_VS = false
-                IFR1_LED_APR = false
-            else
-                IFR1_LED_AP = get("aw109/cockpit/capsule/apms/ias_on") > 0
-                IFR1_LED_HDG = get("aw109/cockpit/capsule/apms/hdg_on") > 0
-                IFR1_LED_NAV = get("aw109/cockpit/capsule/apms/nav_c") > 0 or get("aw109/cockpit/capsule/apms/nav_a") > 0
-                IFR1_LED_ALT = get("aw109/cockpit/capsule/apms/alt_on") > 0
-                IFR1_LED_VS = get("aw109/cockpit/capsule/apms/vs_on") > 0
-                IFR1_LED_APR = get("aw109/cockpit/capsule/apms/app_c") > 0 or get("aw109/cockpit/capsule/apms/app_a") > 0
+    if IFR1_DEVICE == nil then
+        ifr1_open()
+        return
+    end
 
-                local fraction = (sim_time - math.floor(sim_time))
-                if AW109_IAS_HOT then
-                    IFR1_LED_AP = fraction <= 0.5
-                end
+    -- read from the IFR-1. Since it is set to non-blocking, this will return with nov == 0 if there is no report available
+    local nov, byte0, buttons0, buttons1, buttons2, byte5, knob0, knob1, mode_val = hid_read(IFR1_DEVICE, 8)
 
-                if AW109_HDG_HOT then
-                    IFR1_LED_HDG = fraction <= 0.5
-                end
+    if PLANE_AUTHOR == "X-Trident" and PLANE_DESCRIP == "AW109SP" then
+        if IFR1_MODE == IFR1_MODE_VALUE_FMS1 or IFR1_MODE == IFR1_MODE_VALUE_FMS2 then
+            IFR1_LED_AP = false
+            IFR1_LED_HDG = false
+            IFR1_LED_NAV = false
+            IFR1_LED_ALT = false
+            IFR1_LED_VS = false
+            IFR1_LED_APR = false
+        else
+            IFR1_LED_AP = get("aw109/cockpit/capsule/apms/ias_on") > 0
+            IFR1_LED_HDG = get("aw109/cockpit/capsule/apms/hdg_on") > 0
+            IFR1_LED_NAV = get("aw109/cockpit/capsule/apms/nav_c") > 0 or get("aw109/cockpit/capsule/apms/nav_a") > 0
+            IFR1_LED_ALT = get("aw109/cockpit/capsule/apms/alt_on") > 0
+            IFR1_LED_VS = get("aw109/cockpit/capsule/apms/vs_on") > 0
+            IFR1_LED_APR = get("aw109/cockpit/capsule/apms/app_c") > 0 or get("aw109/cockpit/capsule/apms/app_a") > 0
 
-                if AW109_ALT_HOT then
-                    IFR1_LED_ALT = fraction <= 0.5
-                end
-
-                if AW109_VS_HOT then
-                    IFR1_LED_VS = fraction <= 0.5
-                end
-            end
-
-            if (AW109_IAS_HOT or AW109_HDG_HOT or AW109_ALT_HOT or AW109_VS_HOT) and sim_time - AW109_TIME_LAST_ACTION > 5 then
-                AW109_IAS_HOT = false
-                AW109_HDG_HOT = false
-                AW109_ALT_HOT = false
-                AW109_VS_HOT = false
-            end
-
-            if (nov == 8) then
-                AW109_TIME_LAST_ACTION = sim_time
-                knob0 = ifr1_ubyte_to_sbyte(knob0)
-                knob1 = ifr1_ubyte_to_sbyte(knob1)
-                ifr1_acquire_buttons(buttons0, buttons1, buttons2, mode_val)
-
-                ifr1_process_buttons_knobs_aw109sp(knob0, knob1)
-            end
-
-            if AW109_RESET_NEEDED then
-                set("aw109/cockpit/button/rbp2/brt_dec", 0)
-                set("aw109/cockpit/button/rbp2/brt_inc", 0)
-                AW109_RESET_NEEDED = false
-            end
-        else -- Standard configuration
-            IFR1_LED_AP = ap_on > 0
-            IFR1_LED_HDG = ap_lateral == 1 or ap_lateral == 14
-            IFR1_LED_NAV = ap_lateral == 2 or ap_lateral == 13
-            IFR1_LED_ALT = ap_vertical == 6 or ap_alt_hold == 1
-            IFR1_LED_VS = ap_vertical == 4
-            IFR1_LED_APR = ap_appr > 0
-
-            if IFR1_MODE == IFR1_MODE_VALUE_XPDR and xpdr_ident > 0 then
-                local fraction = (sim_time - math.floor(sim_time))
+            local fraction = (sim_time - math.floor(sim_time))
+            if AW109_IAS_HOT then
                 IFR1_LED_AP = fraction <= 0.5
             end
 
-            if (nov == 8) then
-                knob0 = ifr1_ubyte_to_sbyte(knob0)
-                knob1 = ifr1_ubyte_to_sbyte(knob1)
-                ifr1_acquire_buttons(buttons0, buttons1, buttons2, mode_val)
+            if AW109_HDG_HOT then
+                IFR1_LED_HDG = fraction <= 0.5
+            end
 
-                ifr1_process_buttons_knobs_standard(knob0, knob1)
+            if AW109_ALT_HOT then
+                IFR1_LED_ALT = fraction <= 0.5
+            end
+
+            if AW109_VS_HOT then
+                IFR1_LED_VS = fraction <= 0.5
             end
         end
-        ifr1_send_leds(IFR1_DEVICE)
-    else
 
+        if (AW109_IAS_HOT or AW109_HDG_HOT or AW109_ALT_HOT or AW109_VS_HOT) and sim_time - AW109_TIME_LAST_ACTION > 5 then
+            AW109_IAS_HOT = false
+            AW109_HDG_HOT = false
+            AW109_ALT_HOT = false
+            AW109_VS_HOT = false
+        end
+
+        if (nov == 8) then
+            AW109_TIME_LAST_ACTION = sim_time
+            knob0 = ifr1_ubyte_to_sbyte(knob0)
+            knob1 = ifr1_ubyte_to_sbyte(knob1)
+            ifr1_acquire_buttons(buttons0, buttons1, buttons2, mode_val)
+
+            ifr1_process_buttons_knobs_aw109sp(knob0, knob1)
+        end
+
+        if AW109_RESET_NEEDED then
+            set("aw109/cockpit/button/rbp2/brt_dec", 0)
+            set("aw109/cockpit/button/rbp2/brt_inc", 0)
+            AW109_RESET_NEEDED = false
+        end
+    else -- Standard configuration
+        IFR1_LED_AP = ap_on > 0
+        IFR1_LED_HDG = ap_lateral == 1 or ap_lateral == 14
+        IFR1_LED_NAV = ap_lateral == 2 or ap_lateral == 13
+        IFR1_LED_ALT = ap_vertical == 6 or ap_alt_hold == 1
+        IFR1_LED_VS = ap_vertical == 4
+        IFR1_LED_APR = ap_appr > 0
+
+        if IFR1_MODE == IFR1_MODE_VALUE_XPDR and xpdr_ident > 0 then
+            local fraction = (sim_time - math.floor(sim_time))
+            IFR1_LED_AP = fraction <= 0.5
+        end
+
+        if (nov == 8) then
+            knob0 = ifr1_ubyte_to_sbyte(knob0)
+            knob1 = ifr1_ubyte_to_sbyte(knob1)
+            ifr1_acquire_buttons(buttons0, buttons1, buttons2, mode_val)
+
+            ifr1_process_buttons_knobs_standard(knob0, knob1)
+        end
     end
+    ifr1_send_leds(IFR1_DEVICE)
 end
 
 ifr1_open()
